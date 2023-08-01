@@ -1,0 +1,118 @@
+diff --git a/app/Controllers/UserController.php b/app/Controllers/UserController.php
+index 77d52d50..8c1f3488 100644
+--- a/app/Controllers/UserController.php
++++ b/app/Controllers/UserController.php
+@@ -9,6 +9,7 @@ use App\Models\InviteCode;
+ use App\Models\Ann;
+ use App\Models\Speedtest;
+ use App\Models\Shop;
++use App\Models\Paylist;
+ use App\Models\Coupon;
+ use App\Models\Bought;
+ use App\Models\Ticket;
+@@ -1060,6 +1061,92 @@ class UserController extends BaseController
+         return $this->view()->assign('shops', $shops)->display('user/shop.tpl');
+     }
+ 
++    private function db_query($query, $fields) {
++        $rows = $query->get();
++
++        $a = array();
++        foreach ($rows as $row) {
++            $cb = function (string $v) use ($row) {
++                return $row->{$v};
++            };
++            $e = array_combine($fields, array_map($cb, $fields));
++            array_push($a, $e);
++        }
++
++        return $a;
++    }
++
++    public function shop_json($request, $response, $args) {
++        $shop = $this->db_query(
++            Shop::where('status', 1)->orderBy('name'),
++            array(
++                "id",
++                "name",
++                "price",
++                "content",
++                "auto_renew",
++                "auto_reset_bandwidth",
++                "status",
++            ),
++        );
++
++        $keys = array(
++            "payment_system" => Config::get("payment_system"),
++            "mups_alipay" => MalioConfig::get("mups_alipay"),
++            "mups_wechat" => MalioConfig::get("mups_wechat"),
++        );
++
++        $shopsDict = array(
++            "Shop" => $shop,
++            "keys" => $keys,
++        );
++        return $this->echoJson($response, $shopsDict);
++    }
++
++    public function billing_json($request, $response, $args)
++    {
++        $code = $this->db_query(
++            Code::where('type', '<>', '-2')->where('userid', $this->user->id),
++            array(
++                "id",
++                "code",
++                "type",
++                "number",
++                "isused",
++                "usedatetime",
++            ),
++        );
++
++        $paylist = $this->db_query(
++            Paylist::query()->where('userid', $this->user->id),
++            array(
++                "id",
++                "total",
++                "status",
++                "tradeno",
++                "datetime",
++                "shop",
++                "type",
++                "url",
++            ),
++        );
++
++        $bought = $this->db_query(
++            Bought::where('userid', $this->user->id),
++            array(
++                "id",
++                "shopid",
++                "datetime",
++                "renew",
++                "coupon",
++                "price",
++            ),
++        );
++
++        $j = array("Code" => $code, "Paylist" => $paylist, "Bought" => $bought);
++        return $this->echoJson($response, $j);
++    }
++
+     public function CouponCheck($request, $response, $args)
+     {
+         $coupon = $request->getParam('coupon');
+diff --git a/config/routes.php b/config/routes.php
+index 753e1afa..2cd7110f 100644
+--- a/config/routes.php
++++ b/config/routes.php
+@@ -89,6 +89,8 @@ $app->group('/user', function () {
+     $this->get('/disable', App\Controllers\UserController::class . ':disable');
+ 
+     $this->get('/shop', App\Controllers\UserController::class . ':shop');
++    $this->get('/shop_json', App\Controllers\UserController::class . ':shop_json');
++    $this->get('/billing_json', App\Controllers\UserController::class . ':billing_json');
+     $this->post('/coupon_check', App\Controllers\UserController::class . ':CouponCheck');
+     $this->post('/buy', App\Controllers\UserController::class . ':buy');
+ 
