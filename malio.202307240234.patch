@@ -47,15 +47,15 @@ index 77d52d50..8c1f3488 100644
 +            "payment_system" => Config::get("payment_system"),
 +            "mups_alipay" => MalioConfig::get("mups_alipay"),
 +            "mups_wechat" => MalioConfig::get("mups_wechat"),
-+            "custom" => array(
-+                array("id" => 1,
-+                    "identifier" => "wepay", // purchase接口的支付key
-+                    "name" => "微信",         // UI显示支付名称
-+                    "payment" => "微信支付"),  // UI副标题 可不填
-+                array("id" => 2,
-+                    "identifier" => "alipay",
-+                    "name" => "支付宝")
-+            )
++            #"custom" => array(
++            #    array("id" => 1,
++            #        "identifier" => "wepay", // purchase接口的支付key
++            #        "name" => "微信",         // UI显示支付名称
++            #        "payment" => "微信支付"),  // UI副标题 可不填
++            #    array("id" => 2,
++            #        "identifier" => "alipay",
++            #        "name" => "支付宝")
++            #)
 +        );
 +
 +        $shopsDict = array(
